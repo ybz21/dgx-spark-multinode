@@ -176,9 +176,13 @@ cmd_check() {
         echo ""
         info "节点 $((i+1)): $HOSTNAME ($MGMT_IP)"
 
-        _check "  SSH 连接" \
-            "ssh -o ConnectTimeout=3 -o BatchMode=yes ${USER}@${MGMT_IP} 'echo ok'" \
-            "检查 SSH 免密: ssh-copy-id ${USER}@${MGMT_IP}"
+        if is_local_ip "$MGMT_IP"; then
+            _check "  SSH 连接 (本机)" "true"
+        else
+            _check "  SSH 连接" \
+                "ssh -o ConnectTimeout=3 -o BatchMode=yes ${USER}@${MGMT_IP} 'echo ok'" \
+                "检查 SSH 免密: ssh-copy-id ${USER}@${MGMT_IP}"
+        fi
 
         _check "  Docker 可用" \
             "ssh_node $i 'docker info'" \

@@ -49,11 +49,20 @@ parse_node() {
     FAST_IFACE="${_iface}"
 }
 
-# SSH 到指定节点
+# 判断是否为本机 IP
+is_local_ip() {
+    ip -4 addr show 2>/dev/null | grep -qw "$1"
+}
+
+# 在指定节点上执行命令 (本机则直接执行，远程则 SSH)
 ssh_node() {
     local idx=$1; shift
     parse_node "$idx"
-    ssh -o ConnectTimeout=5 -o BatchMode=yes "${USER}@${MGMT_IP}" "$@"
+    if is_local_ip "$MGMT_IP"; then
+        bash -c "$*"
+    else
+        ssh -o ConnectTimeout=5 -o BatchMode=yes "${USER}@${MGMT_IP}" "$@"
+    fi
 }
 
 # ---- 光口检测 ----
