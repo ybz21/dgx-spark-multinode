@@ -119,7 +119,7 @@ done
 ## 文件结构
 
 ```
-dgx-spark-dual/
+dgx-spark-multinode/
 ├── deploy.sh                         # 唯一入口
 ├── .env.example                      # 配置模板
 ├── .env                              # 实际配置 (gitignore)

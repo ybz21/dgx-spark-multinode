@@ -57,7 +57,7 @@ parse_args() {
     while [ $# -gt 0 ]; do
         case "$1" in
             -h|--help)    show_help; exit 0 ;;
-            -v|--version) echo "dgx-spark-dual v${VERSION}"; exit 0 ;;
+            -v|--version) echo "dgx-spark-multinode v${VERSION}"; exit 0 ;;
             --dry-run)    DRY_RUN=true ;;
             -y|--yes)     SKIP_CONFIRM=true ;;
             -f|--follow)  FOLLOW_LOGS=true ;;
