@@ -9,11 +9,14 @@ source "$SCRIPT_DIR/.env"
 DEPLOY_DIR="~/dgx-spark-multinode"
 NNODES=${#NODE_LIST[@]}
 
+# ConnectX-7 网口名列表 (DGX Spark 上的 4 个口)
+CX7_IFACES="enp1s0f0np0 enp1s0f1np1 enP2p1s0f0np0 enP2p1s0f1np1"
+
 # 解析节点信息: parse_node <index> -> MGMT_IP FAST_IP USER HOSTNAME FAST_IFACE
 parse_node() {
     local _iface
     IFS=',' read -r MGMT_IP FAST_IP USER HOSTNAME _iface <<< "${NODE_LIST[$1]}"
-    FAST_IFACE="${_iface:-$FAST_IFACE_DEFAULT}"
+    FAST_IFACE="${_iface}"
 }
 
 # SSH 到指定节点
@@ -21,6 +24,31 @@ ssh_node() {
     local idx=$1; shift
     parse_node "$idx"
     ssh -o ConnectTimeout=5 "${USER}@${MGMT_IP}" "$@"
+}
+
+# 远程自动检测有光缆的 ConnectX-7 口
+# 用法: detect_iface <node_index>  -> 结果写入 FAST_IFACE
+detect_iface() {
+    local idx=$1
+    parse_node "$idx"
+    # 如果 NODE_LIST 中已指定接口，直接使用
+    if [ -n "$FAST_IFACE" ]; then
+        return
+    fi
+    # SSH 到目标机器，找第一个 carrier=1 的 ConnectX-7 口
+    local detected
+    detected=$(ssh_node "$idx" "for dev in $CX7_IFACES; do [ -f /sys/class/net/\$dev/carrier ] && [ \$(cat /sys/class/net/\$dev/carrier 2>/dev/null) = 1 ] && echo \$dev && break; done" 2>/dev/null)
+    if [ -z "$detected" ]; then
+        echo "警告: 节点 $HOSTNAME ($MGMT_IP) 未检测到有光缆的 ConnectX-7 口" >&2
+        FAST_IFACE="enp1s0f0np0"  # fallback
+    else
+        FAST_IFACE="$detected"
+    fi
+}
+
+# 从网口名推导 RDMA HCA 名: enp1s0f1np1 -> rocep1s0f1
+iface_to_rdma() {
+    echo "roce$(echo "$1" | sed 's/np[0-9]*$//' | sed 's/^en//')"
 }
 
 # 获取 head 节点的高速网 IP
@@ -43,7 +71,7 @@ sync_files() {
 # ---- 生成 compose 文件 ----
 generate_compose() {
     local rank=$1
-    parse_node "$rank"
+    detect_iface "$rank"
     local role="head"
     local container="sglang-multinode-head"
     [ "$rank" -gt 0 ] && role="worker-${rank}" && container="sglang-multinode-worker-${rank}"
@@ -51,10 +79,11 @@ generate_compose() {
     local quant_arg=""
     [ -n "$QUANTIZATION" ] && quant_arg="--quantization $QUANTIZATION"
 
-    # 从网口名推导 RDMA HCA 名: enp1s0f1np1 -> rocep1s0f1, enP2p1s0f0np0 -> roceP2p1s0f0
     local node_iface="$FAST_IFACE"
     local rdma_hca
-    rdma_hca="roce$(echo "$node_iface" | sed 's/np[0-9]*$//' | sed 's/^en//')"
+    rdma_hca="$(iface_to_rdma "$node_iface")"
+
+    echo "    接口: $node_iface (RDMA: $rdma_hca)" >&2
 
     # 自定义 patch 挂载
     local volumes_extra=""
@@ -134,9 +163,9 @@ start() {
     for i in $(seq 0 $((NNODES - 1))); do
         parse_node "$i"
         local compose_file="/tmp/docker-compose.node${i}.yml"
+        echo ">>> 节点 $((i+1))/$NNODES: $HOSTNAME ($MGMT_IP) — rank $i"
         generate_compose "$i" > "$compose_file"
 
-        echo ">>> 节点 $((i+1))/$NNODES: $HOSTNAME ($MGMT_IP) — rank $i"
         scp -q "$compose_file" "${USER}@${MGMT_IP}:$DEPLOY_DIR/docker-compose.node${i}.yml"
         ssh_node "$i" "cd $DEPLOY_DIR && docker compose -f docker-compose.node${i}.yml up -d"
 

@@ -1,0 +1,53 @@
+# 节点 1 (HEAD, rank 0) — 由 deploy.sh 自动生成，此文件仅供参考
+# 实际文件会根据 .env 配置和自动检测的光口生成
+
+services:
+  sglang-head:
+    image: nvcr.io/nvidia/sglang:26.03-py3
+    container_name: sglang-multinode-head
+    restart: unless-stopped
+    network_mode: host
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    volumes:
+      - /home/ai/models/YOUR_MODEL:/model:ro
+      # 可选: 挂载自定义 patch 脚本
+      # - /path/to/custom_reasoning_detector.py:/custom/custom_reasoning_detector.py
+      # - /path/to/entrypoint.sh:/custom/entrypoint.sh
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      # NCCL 通信 — 接口名因光缆插口不同而异，由脚本自动检测
+      - NCCL_SOCKET_IFNAME=enp1s0f0np0
+      - NCCL_IB_DISABLE=0
+      - NCCL_NET_GDR_LEVEL=5
+      # RDMA HCA 从接口名自动推导: enp1s0f0np0 -> rocep1s0f0
+      - NCCL_IB_HCA=rocep1s0f0
+      - NCCL_DEBUG=WARN
+      - GLOO_SOCKET_IFNAME=enp1s0f0np0
+      # HEAD 节点的高速网 IP
+      - MASTER_ADDR=10.10.10.1
+      - MASTER_PORT=29500
+    # 可选: 自定义 entrypoint
+    # entrypoint: ["/custom/entrypoint.sh"]
+    command: >
+      python3 -m sglang.launch_server
+      --model-path /model
+      --tp 2
+      --nnodes 2
+      --node-rank 0
+      --nccl-init-addr 10.10.10.1:29500
+      --host 0.0.0.0
+      --port 30000
+      --attention-backend triton
+      --mem-fraction-static 0.8
+      --trust-remote-code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
