@@ -95,8 +95,8 @@ fi
 # ---- 停止模式 ----
 if $STOP_ONLY; then
     header "停止服务"
-    cd "$SCRIPT_DIR" && docker compose --profile head down 2>/dev/null || true
-    [ -n "${WORKER_IP:-}" ] && ssh ${LOCAL_USER}@${WORKER_IP} "cd ~/dgx-spark-multinode && docker compose --profile worker down 2>/dev/null" || true
+    cd "$SCRIPT_DIR/runtime" && docker compose --profile head down 2>/dev/null || true
+    [ -n "${WORKER_IP:-}" ] && ssh ${LOCAL_USER}@${WORKER_IP} "cd ~/dgx-spark-multinode/runtime && docker compose --profile worker down 2>/dev/null" || true
     # 兜底清理
     docker rm -f vllm-spark-head 2>/dev/null || true
     success "已停止"
@@ -321,7 +321,7 @@ fi
 header "Step 4/5: 生成配置"
 
 # 生成 .env
-cat > "${SCRIPT_DIR}/.env" << ENVEOF
+cat > "${SCRIPT_DIR}/runtime/.env" << ENVEOF
 VLLM_IMAGE=${IMAGE}
 MODEL_PATH=${MODEL_PATH}
 MODEL_CONTAINER_PATH=${MODEL_CONTAINER_PATH}
@@ -348,10 +348,8 @@ success "配置已生成"
 
 # 同步到工作节点
 info "同步配置到工作节点..."
-ssh ${LOCAL_USER}@${WORKER_IP} "mkdir -p ~/dgx-spark-multinode/.cache/vllm"
-rsync -ah "${SCRIPT_DIR}/.env" "${SCRIPT_DIR}/docker-compose.yml" \
-    "${SCRIPT_DIR}/entrypoint.sh" "${LOCAL_USER}@${WORKER_IP}:~/dgx-spark-multinode/"
-[ -d "${SCRIPT_DIR}/patches" ] && rsync -ah "${SCRIPT_DIR}/patches/" "${LOCAL_USER}@${WORKER_IP}:~/dgx-spark-multinode/patches/"
+ssh ${LOCAL_USER}@${WORKER_IP} "mkdir -p ~/dgx-spark-multinode/runtime/.cache/vllm"
+rsync -ah "${SCRIPT_DIR}/runtime/" "${LOCAL_USER}@${WORKER_IP}:~/dgx-spark-multinode/runtime/"
 success "配置已同步"
 
 # ==== Step 5: 启动 ====
@@ -359,8 +357,8 @@ header "Step 5/5: 启动双节点"
 
 # 启动 head
 info "启动 HEAD (${LOCAL_MGMT_IP})..."
-mkdir -p "${SCRIPT_DIR}/.cache/vllm"
-cd "$SCRIPT_DIR" && docker compose --profile head up -d
+mkdir -p "${SCRIPT_DIR}/runtime/.cache/vllm"
+cd "$SCRIPT_DIR/runtime" && docker compose --profile head up -d
 
 # 等 Ray head 就绪
 info "等待 Ray head 就绪..."
@@ -371,7 +369,7 @@ done
 
 # 启动 worker
 info "启动 WORKER (${WORKER_IP})..."
-ssh ${LOCAL_USER}@${WORKER_IP} "cd ~/dgx-spark-multinode && docker compose --profile worker up -d"
+ssh ${LOCAL_USER}@${WORKER_IP} "cd ~/dgx-spark-multinode/runtime && docker compose --profile worker up -d"
 
 # 等 2 个 GPU 加入
 info "等待 Ray 集群就绪..."
