@@ -171,9 +171,9 @@ GLOO_IF=$(ip -4 addr show | grep -B2 "$LOCAL_MGMT_IP" | grep -oP '^\d+: \K\S+(?=
 [ -z "$GLOO_IF" ] && GLOO_IF="enP7s7"
 
 # 构建 vLLM extra args
-VLLM_EXTRA_ARGS="--enable-chunked-prefill"
+VLLM_EXTRA_ARGS="--enable-chunked-prefill --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder"
 if echo "$MODEL_NAME" | grep -qi "qwen3"; then
-    VLLM_EXTRA_ARGS="--enable-chunked-prefill --reasoning-parser qwen3"
+    VLLM_EXTRA_ARGS="--enable-chunked-prefill --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder"
 fi
 
 # ============================================================
