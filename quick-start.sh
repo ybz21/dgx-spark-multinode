@@ -6,7 +6,7 @@
 # 自动完成: 校验 → 传输镜像 → 传输模型 → 启动双节点
 #
 # 用法:
-#   bash quick-start.sh WORKER_IP IMAGE MODEL_PATH
+#   bash quick-start.sh WORKER_IP MODEL_PATH [--image IMAGE]
 #   bash quick-start.sh 192.168.130.8 ghcr.nju.edu.cn/bjk110/vllm-spark:v019-ngc2603 ~/models/Qwen3___5-122B-A10B-NVFP4
 #
 # 选项:
@@ -45,7 +45,7 @@ GPU_MEM_UTIL=0.85
 
 # ---- 参数解析 ----
 WORKER_IP=""
-IMAGE=""
+IMAGE="ghcr.nju.edu.cn/bjk110/vllm-spark:v019-ngc2603"
 MODEL_PATH=""
 NO_SYNC_MODEL=false
 NO_SYNC_IMAGE=false
@@ -57,6 +57,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --no-sync-model)  NO_SYNC_MODEL=true ;;
         --no-sync-image)  NO_SYNC_IMAGE=true ;;
+        --image)          shift; IMAGE="$1" ;;
         --dry-run)        DRY_RUN=true ;;
         --stop)           STOP_ONLY=true ;;
         --status)         STATUS_ONLY=true ;;
@@ -69,7 +70,7 @@ while [ $# -gt 0 ]; do
         -*)  die "未知选项: $1 (用 -h 查看帮助)" ;;
         *)
             if [ -z "$WORKER_IP" ]; then WORKER_IP="$1"
-            elif [ -z "$IMAGE" ]; then IMAGE="$1"
+            
             elif [ -z "$MODEL_PATH" ]; then MODEL_PATH="$1"
             else die "多余参数: $1"; fi
             ;;
@@ -102,9 +103,9 @@ if $STOP_ONLY; then
 fi
 
 # ---- 参数校验 ----
-[ -z "$WORKER_IP" ] && die "缺少工作节点 IP\n用法: bash $0 WORKER_IP IMAGE MODEL_PATH"
-[ -z "$IMAGE" ] && die "缺少 Docker 镜像名\n用法: bash $0 WORKER_IP IMAGE MODEL_PATH"
-[ -z "$MODEL_PATH" ] && die "缺少模型路径\n用法: bash $0 WORKER_IP IMAGE MODEL_PATH"
+[ -z "$WORKER_IP" ] && die "缺少工作节点 IP\n用法: bash $0 WORKER_IP MODEL_PATH [--image IMAGE]"
+[ -z "$IMAGE" ] && die "缺少 Docker 镜像名\n用法: bash $0 WORKER_IP MODEL_PATH [--image IMAGE]"
+[ -z "$MODEL_PATH" ] && die "缺少模型路径\n用法: bash $0 WORKER_IP MODEL_PATH [--image IMAGE]"
 
 MODEL_PATH="$(eval echo "$MODEL_PATH")"
 MODEL_PATH="$(cd "$MODEL_PATH" 2>/dev/null && pwd)" || die "模型路径不存在: $MODEL_PATH"
