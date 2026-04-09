@@ -335,19 +335,14 @@ elif ssh ${LOCAL_USER}@${WORKER_IP} "docker image inspect '$IMAGE'" &>/dev/null;
     success "工作节点已有镜像"
 else
     info "传输镜像到工作节点 (通过高速网)..."
-    IMAGE_SIZE=
-The command 'docker' could not be found in this WSL 2 distro.
-We recommend to activate the WSL integration in Docker Desktop settings.
-
-For details about using Docker Desktop with WSL 2, visit:
-
-https://docs.docker.com/go/wsl2/
-    if command -v pv &>/dev/null; then
-        docker save  | pv -s  -N 镜像传输 | ssh -o StrictHostKeyChecking=no @ docker load >/dev/null
-    else
-        docker save  | ssh -o StrictHostKeyChecking=no @ docker load
-    fi
-    success "镜像传输完成"
+    IMAGE_SIZE_B=$(docker image inspect "$IMAGE" --format "{{.Size}}")
+    IMAGE_SIZE=$(echo $IMAGE_SIZE_B | awk '{printf "%.1f", $1/1024/1024/1024}')
+    info "镜像大小: ${IMAGE_SIZE}GB"
+    START_TS=$SECONDS
+    docker save "$IMAGE" | ssh -o StrictHostKeyChecking=no ${LOCAL_USER}@${FAST_IP_WORKER} "docker load" >/dev/null
+    ELAPSED=$((SECONDS - START_TS))
+    [ $ELAPSED -gt 0 ] && SPEED=$(awk "BEGIN{printf \"%.0f\", $IMAGE_SIZE_B/1024/1024/$ELAPSED}") || SPEED="N/A"
+    success "镜像传输完成 (${ELAPSED}s, ${SPEED}MB/s)"
 fi
 
 # ==== Step 3: 同步模型 ====
