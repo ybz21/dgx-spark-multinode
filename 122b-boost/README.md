@@ -25,12 +25,12 @@
 | [`部署指南.md`](./部署指南.md) | 从零部署、参数调优、故障排查 |
 | [`docker-compose.yaml`](./docker-compose.yaml) | 固化的服务定义（单容器 host 网络） |
 | [`bench_llm.py`](./bench_llm.py) | 基准测试脚本（needle + latency + 并发压测） |
-| [`bench_report.md`](./bench_report.md) · [`.json`](./bench_report.json) | 基准结果（128k 上下文 · .12） |
-| [`bench_256k.md`](./bench_256k.md) · [`.json`](./bench_256k.json) | 256k 上下文对比（.8） |
-| [`bench_ttft_sweep.md`](./bench_ttft_sweep.md) · [`.json`](./bench_ttft_sweep.json) | 细粒度 TTFT 曲线（2k→96k） |
-| [`ttft-analysis.md`](./ttft-analysis.md) | **TTFT 瓶颈分析 + 上下文长度经验指南** |
+| [`基准报告-128k.md`](./基准报告-128k.md) · [`.json`](./bench_report.json) | 基准结果（128k 上下文 · .12） |
+| [`基准报告-256k.md`](./基准报告-256k.md) · [`.json`](./bench_256k.json) | 256k 上下文对比（.8） |
+| [`TTFT曲线测试.md`](./TTFT曲线测试.md) · [`.json`](./bench_ttft_sweep.json) | 细粒度 TTFT 曲线（2k→96k） |
+| [`TTFT瓶颈分析.md`](./TTFT瓶颈分析.md) | **TTFT 瓶颈分析 + 上下文长度经验指南** |
 | [`soak_test.py`](./soak_test.py) | **长久稳定性测试**（混合负载 + 正确性探针 + 分时漂移） |
-| [`soak_1h_summary.md`](./soak_1h_summary.md) · [`status.json`](./soak_1h_status.json) | 1 小时稳定性验证结果（1393 reqs / 100% 成功） |
+| [`稳定性测试报告-1h.md`](./稳定性测试报告-1h.md) · [`.json`](./soak_1h_status.json) | 1 小时稳定性验证结果（1393 reqs / 100% 成功） |
 
 ## 快速使用
 

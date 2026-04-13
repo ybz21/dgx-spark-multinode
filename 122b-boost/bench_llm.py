@@ -210,24 +210,24 @@ def fmt(v, f="{:.2f}", dash="-"):
 
 def render_report(meta, needle, latency, stress):
     lines = [
-        "# vLLM Benchmark Report",
+        "# vLLM 基准测试报告",
         "",
-        f"- **Endpoint**: `{meta['base']}`",
-        f"- **Model**: `{meta['model']}`",
-        f"- **Timestamp**: {meta['ts']}",
-        f"- **Script**: `{meta['script']}`",
+        f"- **服务端点**：`{meta['base']}`",
+        f"- **模型名**：`{meta['model']}`",
+        f"- **时间戳**：{meta['ts']}",
+        f"- **脚本**：`{meta['script']}`",
         "",
     ]
     if needle:
         lines += [
-            "## 1. Long-context needle-in-a-haystack",
+            "## 1. 长上下文大海捞针（needle-in-a-haystack）",
             "",
-            f"- Target prompt: **{needle['target_tokens']:,}** tokens "
-            f"(actual: {needle['actual_tokens']:,})",
-            f"- Needle: `{NEEDLE_SECRET}`",
+            f"- 目标 prompt 长度：**{needle['target_tokens']:,}** tokens "
+            f"（实际：{needle['actual_tokens']:,}）",
+            f"- 针：`{NEEDLE_SECRET}`",
             "",
-            "| Depth | Found | Prompt tok | TTFT (s) | Total (s) | Answer |",
-            "|------:|:-----:|-----------:|---------:|----------:|--------|",
+            "| 深度 | 找到 | Prompt tok | TTFT（秒） | 总耗时（秒） | 回答 |",
+            "|----:|:---:|-----------:|---------:|-----------:|--------|",
         ]
         for r in needle["results"]:
             ans = (r["answer"] or "").replace("|", "/").replace("\n", " ")[:80]
@@ -237,13 +237,13 @@ def render_report(meta, needle, latency, stress):
                 f"{fmt(r['total'])} | {ans} |"
             )
         passed = sum(1 for r in needle["results"] if r["found"])
-        lines += ["", f"**Pass rate**: {passed}/{len(needle['results'])}", ""]
+        lines += ["", f"**通过率**：{passed}/{len(needle['results'])}", ""]
     if latency:
         lines += [
-            "## 2. Latency sweep (single request, greedy decode)",
+            "## 2. 延迟扫描（单请求、贪心解码）",
             "",
-            "| Prompt tok | TTFT (s) | Total (s) | Out tok | Prefill tok/s | Decode tok/s |",
-            "|-----------:|---------:|----------:|--------:|--------------:|-------------:|",
+            "| Prompt tok | TTFT（秒） | 总耗时（秒） | 输出 tok | Prefill tok/s | Decode tok/s |",
+            "|-----------:|---------:|-----------:|--------:|-------------:|------------:|",
         ]
         for r in latency:
             lines.append(
@@ -254,13 +254,13 @@ def render_report(meta, needle, latency, stress):
         lines.append("")
     if stress:
         lines += [
-            f"## 3. Concurrency stress "
-            f"(prompt={stress['prompt_tokens']} tok, max_output={stress['max_output_tokens']} tok)",
+            f"## 3. 并发压测"
+            f"（prompt={stress['prompt_tokens']} tok，max_output={stress['max_output_tokens']} tok）",
             "",
-            "| Conc | Req | Dur (s) | OK | Fail | p50 TTFT (s) | p95 TTFT (s) | "
-            "p50 Total (s) | Agg out tok/s | RPS |",
-            "|----:|----:|--------:|---:|----:|-------------:|-------------:|"
-            "-------------:|--------------:|----:|",
+            "| 并发 | 请求数 | 耗时（秒） | 成功 | 失败 | p50 TTFT（秒） | p95 TTFT（秒） | "
+            "p50 总耗时（秒） | 聚合输出 tok/s | RPS |",
+            "|----:|----:|---------:|---:|----:|-------------:|-------------:|"
+            "----------------:|--------------:|----:|",
         ]
         for r in stress["levels"]:
             lines.append(

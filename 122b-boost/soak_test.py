@@ -258,33 +258,33 @@ def fmt_tps(v):  return "-" if v is None else f"{v:.1f}"
 
 def render_status_md(snap, args):
     lines = [
-        "# Soak test status",
+        "# 稳定性测试状态",
         "",
-        f"- **Endpoint**: `{args.base}`",
-        f"- **Model**: `{args.model}`",
-        f"- **Concurrency**: {args.concurrency}",
-        f"- **Elapsed**: {snap['elapsed_h']:.2f} h "
-        f"/ target {args.duration / 3600:.2f} h",
-        f"- **Throughput**: {snap['rps']:.2f} rps · "
-        f"success {snap['success']}/{snap['total']} "
-        f"({snap['success_rate']*100:.2f}%)",
-        f"- **Rolling p50 TTFT**: {fmt_ttft(snap['rolling_p50_ttft'])}  ·  "
+        f"- **服务端点**：`{args.base}`",
+        f"- **模型名**：`{args.model}`",
+        f"- **并发数**：{args.concurrency}",
+        f"- **已运行**：{snap['elapsed_h']:.2f} 小时 "
+        f"/ 目标 {args.duration / 3600:.2f} 小时",
+        f"- **吞吐**：{snap['rps']:.2f} rps · "
+        f"成功 {snap['success']}/{snap['total']} "
+        f"（{snap['success_rate']*100:.2f}%）",
+        f"- **滚动 p50 TTFT**：{fmt_ttft(snap['rolling_p50_ttft'])}  ·  "
         f"p95 {fmt_ttft(snap['rolling_p95_ttft'])}  ·  "
-        f"decode {fmt_tps(snap['rolling_mean_decode_tps'])} tok/s",
-        f"- **Correctness probes**: pass {snap['probe_pass']}  ·  "
-        f"fail {snap['probe_fail']}",
+        f"解码 {fmt_tps(snap['rolling_mean_decode_tps'])} tok/s",
+        f"- **正确性探针**：通过 {snap['probe_pass']}  ·  "
+        f"失败 {snap['probe_fail']}",
         "",
-        "## Per-kind latency",
+        "## 分负载延迟",
         "",
-        "| Kind | N | p50 TTFT | p95 TTFT |",
+        "| 负载类型 | 请求数 | p50 TTFT | p95 TTFT |",
         "|------|--:|---------:|---------:|",
     ]
     for k, v in snap["per_kind_ttft"].items():
         lines.append(f"| {k} | {v['n']} | {fmt_ttft(v['p50'])} | "
                      f"{fmt_ttft(v['p95'])} |")
-    lines += ["", "## Hourly drift",
+    lines += ["", "## 分时漂移",
               "",
-              "| Hour | N | Fails | p50 TTFT | p95 TTFT | Decode tok/s |",
+              "| Hour | 请求数 | 失败 | p50 TTFT | p95 TTFT | Decode tok/s |",
               "|-----:|--:|------:|---------:|---------:|-------------:|"]
     for hk, h in snap["hourly"].items():
         lines.append(
@@ -292,15 +292,15 @@ def render_status_md(snap, args):
             f"{fmt_ttft(h['p95_ttft'])} | {fmt_tps(h['mean_decode_tps'])} |"
         )
     if snap["top_errors"]:
-        lines += ["", "## Top error signatures", ""]
+        lines += ["", "## 主要错误签名", ""]
         for sig, n in snap["top_errors"].items():
             lines.append(f"- **{n}×** `{sig[:140]}`")
     if snap["recent_probe_failures"]:
-        lines += ["", "## Recent probe failures", ""]
+        lines += ["", "## 最近探针失败", ""]
         for p in snap["recent_probe_failures"]:
             lines.append(
                 f"- `{time.strftime('%H:%M:%S', time.localtime(p['ts']))}` "
-                f"**Q**: {p['q']}  **A**: {p['ans'][:120]!r}")
+                f"**问题**：{p['q']}  **回答**：{p['ans'][:120]!r}")
     return "\n".join(lines) + "\n"
 
 
@@ -344,11 +344,11 @@ def snapshot_loop(args, stats, stop_event):
 
 def render_summary_md(snap, args):
     lines = render_status_md(snap, args).split("\n")
-    lines[0] = "# Soak test summary"
+    lines[0] = "# 稳定性测试总结报告"
     hdr = [
         "",
-        f"- **Start**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() - snap['elapsed_s']))}",
-        f"- **End**:   {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"- **开始时间**：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() - snap['elapsed_s']))}",
+        f"- **结束时间**：{time.strftime('%Y-%m-%d %H:%M:%S')}",
         "",
     ]
     return "\n".join(lines[:1] + hdr + lines[1:]) + "\n"
