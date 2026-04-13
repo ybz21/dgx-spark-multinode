@@ -27,6 +27,7 @@
 | [`bench_llm.py`](./bench_llm.py) | 基准测试脚本（needle + latency + 并发压测） |
 | [`bench_report.md`](./bench_report.md) | 最近一次基准结果（Markdown） |
 | [`bench_report.json`](./bench_report.json) | 同上的原始 JSON |
+| [`soak_test.py`](./soak_test.py) | **长久稳定性测试**（混合负载 + 正确性探针 + 分时漂移） |
 
 ## 快速使用
 
