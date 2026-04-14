@@ -1,0 +1,23 @@
+# sysfix-proxy (System-message fix, 独立)
+# 用法: cd ~/lm_scripts && docker compose -f docker-compose-proxy-sysfix.yaml up -d
+# 端口: 30020 -> upstream http://localhost:30000 (vllm)
+
+services:
+  sysfix:
+    image: docker.1ms.run/python:3.12-slim
+    container_name: sysfix-proxy
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - PORT=30020
+      - UPSTREAM=http://localhost:30000
+    volumes:
+      - ./services/sysfix_proxy.py:/app/sysfix_proxy.py
+    working_dir: /app
+    command: >
+      sh -c "pip install -q fastapi uvicorn httpx && python sysfix_proxy.py"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:30020/health\").status==200 else 1)'"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

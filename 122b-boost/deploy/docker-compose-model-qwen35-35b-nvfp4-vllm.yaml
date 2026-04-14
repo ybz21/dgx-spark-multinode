@@ -1,0 +1,54 @@
+# Qwen3.5-35B-A3B NVFP4 (txn545) - vLLM
+# 用法: cd ~/lm_scripts && docker compose -f docker-compose-model-qwen35-35b-nvfp4-vllm.yaml up -d
+# 端口: 30000
+# 权重: ~22GB; GPU mem util 0.60 (DGX Spark 统一内存 119GB, 为系统留出余量)
+# 注意: 与 docker-compose.yaml (122B) 互斥, 不能同时启动
+
+services:
+  vllm:
+    image: vllm-qwen35-v2
+    container_name: vllm-35b-nvfp4
+    restart: unless-stopped
+    ipc: host
+    ports:
+      - "30000:30000"
+    security_opt:
+      - label=disable
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - /home/ai/models:/models
+      - ./services/qwen3_nothink_reasoning_parser_vllm.py:/custom/qwen3_nothink_reasoning_parser_vllm.py:ro
+    entrypoint: ["/opt/entrypoint.sh"]
+    command:
+      - serve
+      - /models/Qwen3.5-35B-A3B-NVFP4-txn545
+      - --served-model-name
+      - qwen3.5-35b-a3b-nvfp4
+      - --port
+      - "30000"
+      - --max-model-len
+      - "32768"
+      - --gpu-memory-utilization
+      - "0.60"
+      - --trust-remote-code
+      - --attention-backend
+      - FLASHINFER
+      - --reasoning-parser-plugin
+      - /custom/qwen3_nothink_reasoning_parser_vllm.py
+      - --reasoning-parser
+      - qwen3_nothink
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:30000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 600s

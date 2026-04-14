@@ -1,0 +1,26 @@
+# open-webui (独立)
+# 用法: cd ~/lm_scripts && docker compose -f docker-compose-chat-open-webui.yaml up -d
+# 端口: 30030 -> 内部 8080; upstream http://localhost:30000/v1 (vllm)
+
+services:
+  open-webui:
+    image: docker.1ms.run/dyrnq/open-webui:v0.3.14
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "30030:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://host.docker.internal:30000/v1
+      - OPENAI_API_KEY=none
+      - ENABLE_OLLAMA_API=false
+      - WEBUI_AUTH=false
+      - ENABLE_RAG_WEB_SEARCH=false
+      - ENABLE_IMAGE_GENERATION=false
+      - SAFE_MODE=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open-webui-data:/app/backend/data
+
+volumes:
+  open-webui-data:
